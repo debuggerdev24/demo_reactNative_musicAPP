@@ -9,7 +9,10 @@ buildscript {
     }
     repositories {
         google()
-        mavenCentral()
+        // mavenCentral()
+        maven { url 'https://jitpack.io' }
+        jcenter()
+
     }
     dependencies {
         classpath("com.android.tools.build:gradle")
@@ -17,5 +20,11 @@ buildscript {
         classpath("org.jetbrains.kotlin:kotlin-gradle-plugin")
     }
 }
-
+allprojects {
+    repositories {
+         maven {
+            url("${project(':react-native-background-fetch').projectDir}/libs")
+        }
+    }
+}
 apply plugin: "com.facebook.react.rootproject"
