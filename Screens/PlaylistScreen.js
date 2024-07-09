@@ -106,13 +106,16 @@ export default function PlaylistScreen({ navigation }) {
         </TouchableOpacity>
       </View>
 
-      <FlatList
-        data={playlists}
-        renderItem={renderPlaylistItem}
-        keyExtractor={(item) => item.id}
-        numColumns={3}
-        contentContainerStyle={styles.playlistContainer}
-      />
+      <View style={{ flex: 1 }}>
+        <FlatList
+          data={playlists}
+          renderItem={renderPlaylistItem}
+          keyExtractor={(item) => item.id}
+          numColumns={3}
+          contentContainerStyle={styles.playlistContainer}
+        />
+      </View>
+
 
       <Modal
         animationType="slide"
@@ -175,7 +178,6 @@ const styles = StyleSheet.create({
   playlistContainer: {
     paddingHorizontal: 10,
     paddingTop: 10,
-    width:'100%'
   },
   playlistItem: {
     flex: 1,
@@ -183,8 +185,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     margin: 5,
     padding: 10,
-    // backgroundColor: '#f0f0f0',
-    backgroundColor:'black',
+    backgroundColor: '#f0f0f0',
     borderRadius: 5,
   },
   playlistTitle: {
@@ -241,5 +242,9 @@ const styles = StyleSheet.create({
   buttonText: {
     color: 'white',
     fontSize: 16,
+  },
+  item: {
+    padding: 5,
+    flex : 1,
   },
 });

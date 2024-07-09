@@ -132,9 +132,19 @@ export default function PlayListMusic({ route, navigation }) {
                 onRequestClose={toggleModal}
             >
                 <View style={styles.modalContainer}>
+                    <View style={styles.ModalTop}>
+                        <Text style={[styles.title]}>Add music</Text>
+                        <TouchableOpacity onPress={handleAddMusic} style={styles.tickButton}>
+                            <Image
+                                source={require('../assets/images/tick.png')}
+                                style={styles.icon}
+                            />
+                        </TouchableOpacity>
+                    </View>
+
                     <FlatList
                         data={musicList}
-                        keyExtractor={(item, index) => item.id + index}
+                        keyExtractor={(item) => item.path}
                         renderItem={({ item, index }) => (
                             <View style={styles.musicItem}>
                                 <Text style={styles.musicTitle}>{item.name}</Text>
@@ -147,19 +157,14 @@ export default function PlayListMusic({ route, navigation }) {
                             </View>
                         )}
                     />
-                    <TouchableOpacity onPress={handleAddMusic} style={styles.tickButton}>
-                        <Image
-                            source={require('../assets/images/tick.png')}
-                            style={styles.icon}
-                        />
-                    </TouchableOpacity>
+
                 </View>
             </Modal>
 
             <FlatList
                 data={selectedSong}
                 renderItem={renderItem}
-                keyExtractor={(item, index) => `${item.path}-${index}`}
+                keyExtractor={(item) => item.path}
             />
         </View>
     );
@@ -181,16 +186,16 @@ const styles = StyleSheet.create({
         fontStyle: 'normal',
         fontWeight: '800',
         color: 'black',
+        // marginTop : 10
     },
     icon: {
         width: 20,
         height: 20,
-        // margin: 10,
     },
     modalContainer: {
         flex: 1,
         backgroundColor: 'white',
-        marginTop: 50,
+        marginTop: 10,
     },
     closeButton: {
         alignSelf: 'flex-end',
@@ -201,9 +206,7 @@ const styles = StyleSheet.create({
         color: 'blue',
     },
     tickButton: {
-        alignSelf: 'flex-end',
-        marginRight: 20,
-        marginBottom: 20,
+        marginRight: 10,
     },
     musicItem: {
         padding: 10,
@@ -216,7 +219,7 @@ const styles = StyleSheet.create({
     musicTitle: {
         fontSize: 16,
         color: 'black',
-        width:'90%'
+        width: '90%',
     },
     item: {
         padding: 10,
@@ -224,12 +227,20 @@ const styles = StyleSheet.create({
         borderBottomColor: '#ccc',
         flexDirection: 'row',
         alignItems: 'center',
-        justifyContent: 'space-between'
+        justifyContent: 'space-between',
     },
     musicTitle2: {
         fontSize: 18,
         paddingEnd: 10,
         flex: 1,
-        color: 'black'
+        color: 'black',
     },
+    ModalTop: {
+        justifyContent: "space-between",
+        height: 40,
+        borderBottomWidth: 1,
+        borderBottomColor: '#f0f0f0',
+        flexDirection: "row",
+        alignItems: "center"
+    }
 });
