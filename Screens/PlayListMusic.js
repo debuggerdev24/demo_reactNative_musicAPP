@@ -4,7 +4,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { View, Text, StyleSheet, Image, TouchableOpacity, Modal, FlatList } from 'react-native';
 
 export default function PlayListMusic({ route, navigation }) {
-    const { playlists, index } = route.params;
+    const { playlistId, playlistTitle } = route.params;
     const [showModal, setShowModal] = useState(false);
     const [musicList, setMusicList] = useState([]);
     const [selectedSong, setSelectedSong] = useState([]);
@@ -15,7 +15,8 @@ export default function PlayListMusic({ route, navigation }) {
 
     useEffect(() => {
         loadPlaylists();
-    }, []);
+        loadSelectedSongs(playlistId);
+    }, [playlistId]);
 
     const loadPlaylists = async () => {
         try {
@@ -28,6 +29,19 @@ export default function PlayListMusic({ route, navigation }) {
         }
     };
 
+    const loadSelectedSongs = async (id) => {
+        try {
+            const storedSelectedSongs = await AsyncStorage.getItem(`selectedSongs_${id}`);
+            if (storedSelectedSongs) {
+                setSelectedSong(JSON.parse(storedSelectedSongs));
+            } else {
+                setSelectedSong([]);
+            }
+        } catch (error) {
+            console.error('Failed to load selected songs', error);
+        }
+    };
+
     const toggleModal = () => {
         setShowModal(!showModal);
         setShowTickIcon(false);
@@ -35,6 +49,7 @@ export default function PlayListMusic({ route, navigation }) {
 
     const handlePress = async (index) => {
         const selectedMusic = selectedSong[index];
+        delete selectedMusic.check;
         const isAlreadyInHistory = musicHistoryFiles.some(
             (existingFile) => existingFile.path === selectedMusic.path
         );
@@ -43,9 +58,7 @@ export default function PlayListMusic({ route, navigation }) {
             setMusicHistoryFiles(updatedHistory);
         }
         await AsyncStorage.setItem("historyData", JSON.stringify(selectedMusic));
-        console.log("musicFiles123245>>>"+JSON.stringify(selectedMusic));
-        console.log("index>>>"+index);
-        navigation.navigate('MusicPlayerScreen', { musicFiles: selectedMusic, currentIndex: index });
+        navigation.navigate('MusicPlayerScreen', { musicFiles: selectedSong, currentIndex: index });
     };
 
     const handleCloseModal = () => {
@@ -53,11 +66,32 @@ export default function PlayListMusic({ route, navigation }) {
         setShowTickIcon(false);
     };
 
-    const handleAddMusic = () => {
+    const handleAddMusic = async () => {
         const checkedSongs = musicList.filter(song => song.check);
-        setSelectedSong(checkedSongs);
+
+        const storedSelectedSongs = await AsyncStorage.getItem(`selectedSongs_${playlistId}`);
+        let existingSelectedSongs = [];
+        if (storedSelectedSongs) {
+            existingSelectedSongs = JSON.parse(storedSelectedSongs);
+        }
+
+        const updatedSelectedSongs = [...existingSelectedSongs, ...checkedSongs];
+
+        const uniqueSelectedSongs = updatedSelectedSongs.filter((song, index, self) =>
+            index === self.findIndex((s) => (
+                s.path === song.path
+            ))
+        );
+
+        setSelectedSong(uniqueSelectedSongs);
         setShowTickIcon(true);
         setShowModal(false);
+
+        try {
+            await AsyncStorage.setItem(`selectedSongs_${playlistId}`, JSON.stringify(uniqueSelectedSongs));
+        } catch (error) {
+            console.error('Failed to save selected songs', error);
+        }
     };
 
     const toggleCheck = (index) => {
@@ -75,7 +109,7 @@ export default function PlayListMusic({ route, navigation }) {
     return (
         <View style={styles.container}>
             <View style={styles.header}>
-                <Text style={styles.title}>Add new Song</Text>
+                <Text style={styles.title}>{playlistTitle}</Text>
                 <TouchableOpacity onPress={toggleModal}>
                     {showTickIcon ? (
                         <Image
@@ -151,7 +185,7 @@ const styles = StyleSheet.create({
     icon: {
         width: 20,
         height: 20,
-        margin: 10,
+        // margin: 10,
     },
     modalContainer: {
         flex: 1,
@@ -181,7 +215,8 @@ const styles = StyleSheet.create({
     },
     musicTitle: {
         fontSize: 16,
-        color: 'black'
+        color: 'black',
+        width:'90%'
     },
     item: {
         padding: 10,

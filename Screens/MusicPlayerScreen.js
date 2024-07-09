@@ -16,12 +16,11 @@ const MusicPlayerScreen = ({ route }) => {
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
 
-  useEffect(() => {
-    console.log('musicFiles:', JSON.stringify(musicFiles));
-    console.log('currentIndex:', currentIndex);
+  useEffect(() => {    
     if (!musicFiles || !Array.isArray(musicFiles) || musicFiles.length === 0) {
       console.error('musicFiles is not defined or empty');
       return;
+
     }
     if (currentTrackIndex < 0 || currentTrackIndex >= musicFiles.length) {
       console.error('currentTrackIndex is out of bounds');
@@ -121,7 +120,7 @@ const MusicPlayerScreen = ({ route }) => {
           <Text style={styles.backButtonText}>{"<"}</Text>
         </TouchableOpacity>
         <Text style={styles.title} numberOfLines={1} ellipsizeMode="tail">
-          {/* {musicFiles[currentTrackIndex].name} */}
+          {musicFiles[currentTrackIndex].name}
         </Text>
       </View>
       <Image style={styles.albumCover} source={require('../assets/images/music-note.png')} />
@@ -140,7 +139,7 @@ const MusicPlayerScreen = ({ route }) => {
         <Text style={styles.timeText}>{new Date(duration * 1000).toISOString().substr(14, 5)}</Text>
       </View>
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', width: '100%' }}>
-        {/* <Text style={[styles.title, { marginTop: 50 }]} numberOfLines={2}>{musicFiles[currentTrackIndex].name}</Text> */}
+        <Text style={[styles.title, { marginTop: 50 }]} numberOfLines={2}>{musicFiles[currentTrackIndex].name}</Text>
       </View>
       <View style={styles.controlsContainer}>
         <TouchableOpacity onPress={handlePrev} style={styles.controlButton} disabled={currentTrackIndex === 0}>

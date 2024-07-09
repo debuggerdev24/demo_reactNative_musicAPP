@@ -37,7 +37,7 @@ const MusicList = () => {
   const fetchMusicFiles = async () => {
     setLoading(true);
     try {
-      const files = await getFiles(RNFS.ExternalStorageDirectoryPath,10); // Limit depth to 2
+      const files = await getFiles(RNFS.ExternalStorageDirectoryPath,10);
       setMusicFiles(files);
       await AsyncStorage.setItem('musicFiles', JSON.stringify(files));
     } catch (error) {

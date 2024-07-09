@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, Image, TouchableOpacity, StyleSheet, Modal, TextInput, FlatList } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useFocusEffect } from '@react-navigation/native';
 
 export default function PlaylistScreen({ navigation }) {
   const [modalVisible, setModalVisible] = useState(false);
@@ -11,6 +12,12 @@ export default function PlaylistScreen({ navigation }) {
   useEffect(() => {
     loadPlaylists();
   }, []);
+
+  useFocusEffect(
+    React.useCallback(() => {
+      loadPlaylists();
+    }, [])
+  );
 
   const generateRandomId = () => {
     const datePart = new Date().getTime().toString(36);
@@ -57,29 +64,43 @@ export default function PlaylistScreen({ navigation }) {
 
   const handlePress = (index) => {
     console.log('Playlists:', playlists.map(item => ({ id: item.id, title: item.title })));
-    navigation.navigate('PlayListMusic', { playlists, index });
+    const playlist = playlists[index];
+    navigation.navigate('PlayListMusic', { playlistId: playlist.id, playlistTitle: playlist.title });
   };
 
-  const renderPlaylistItem = ({ item, index }) => (
-    <TouchableOpacity style={styles.item} onPress={() => handlePress(index)}>
-      <View style={styles.playlistItem}>
-        <Image 
-          source={require('../assets/images/playlist.png')} 
-          style={styles.addMusicIcon}
-        />
-        <Text style={styles.playlistTitle}>{item.title}</Text>
-        <Text style={styles.playlistCount}>{item.title + " Music"}</Text>
-      </View>
-    </TouchableOpacity>
-  );
+  const renderPlaylistItem = async ({ item, index }) => {
+    let storedSelectedSongs = [];
+    try {
+      const selectedSongs = await AsyncStorage.getItem(`selectedSongs_${item.id}`);
+      if (selectedSongs) {
+        storedSelectedSongs = JSON.parse(selectedSongs);
+      }
+    } catch (error) {
+      console.error(`Failed to load selected songs for playlist ${item.id}`, error);
+    }
+
+    return (
+      <TouchableOpacity style={styles.item} onPress={() => handlePress(index)}>
+        <View style={styles.playlistItem}>
+          <Image
+            source={require('../assets/images/playlist.png')}
+            style={styles.addMusicIcon}
+          />
+          <Text style={styles.playlistTitle}>{item.title}</Text>
+          <Text style={styles.playlistCount}>{`${storedSelectedSongs.length} Music`}</Text>
+        </View>
+      </TouchableOpacity>
+    );
+  };
+
 
   return (
     <View style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.title}>Playlists</Text>
         <TouchableOpacity onPress={() => setModalVisible(true)}>
-          <Image 
-            source={require('../assets/images/add_music.png')} 
+          <Image
+            source={require('../assets/images/add_music.png')}
             style={styles.addMusicIcon}
           />
         </TouchableOpacity>
@@ -154,6 +175,7 @@ const styles = StyleSheet.create({
   playlistContainer: {
     paddingHorizontal: 10,
     paddingTop: 10,
+    width:'100%'
   },
   playlistItem: {
     flex: 1,
@@ -161,7 +183,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     margin: 5,
     padding: 10,
-    backgroundColor: '#f0f0f0',
+    // backgroundColor: '#f0f0f0',
+    backgroundColor:'black',
     borderRadius: 5,
   },
   playlistTitle: {
@@ -171,6 +194,7 @@ const styles = StyleSheet.create({
   },
   playlistCount: {
     fontSize: 16,
+    color: 'black',
   },
   modalBackground: {
     flex: 1,
@@ -198,6 +222,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     paddingHorizontal: 10,
     borderRadius: 5,
+    color: 'black',
   },
   buttonContainer: {
     flexDirection: 'row',

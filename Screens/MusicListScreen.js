@@ -3,6 +3,7 @@ import { View, Text, FlatList, StyleSheet, TouchableOpacity, InteractionManager,
 import RNFS from 'react-native-fs';
 import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+// import { check } from 'react-native-permissions';
 
 const MusicListScreen = () => {
   const [musicFiles, setMusicFiles] = useState([]);
@@ -34,7 +35,7 @@ const MusicListScreen = () => {
         await Promise.all(directories.map(async directory => {
           await fetchMusicFiles(directory.path, currentDepth);
         }));
-
+musicFiles: 
         setMusicFiles(prevState => [
           ...prevState,
           ...audioFiles.map(file => ({
@@ -269,6 +270,5 @@ const styles = StyleSheet.create({
     color: 'black',
   },
 });
-
 
 export default MusicListScreen;
