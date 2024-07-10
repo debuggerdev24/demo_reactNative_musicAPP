@@ -144,14 +144,14 @@ musicFiles:
                       <Text style={styles.songTitle}>{selectedSong.size} bytes</Text>
                       <Text style={styles.modalText}>Path: </Text>
                       <Text style={styles.songTitle}>{selectedSong.path}</Text>
-                      <Text style={styles.modalText}>Date: </Text>
+                      {/* <Text style={styles.modalText}>Date: </Text>
                       <Text style={styles.songTitle}>{selectedSong.date}</Text>
                       <Text style={styles.modalText}>Length: </Text>
                       <Text style={styles.songTitle}>{selectedSong.length}</Text>
                       <Text style={styles.modalText}>Artist: </Text>
                       <Text style={styles.songTitle}>{selectedSong.artist}</Text>
                       <Text style={styles.modalText}>Album: </Text>
-                      <Text style={styles.songTitle}>{selectedSong.album}</Text>
+                      <Text style={styles.songTitle}>{selectedSong.album}</Text> */}
                     </View>
                   )}
                 </View>
@@ -261,7 +261,8 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 10,
     alignItems: 'center',
   },
-  modalContent: {
+  modalContent: {    
+   
     width: '100%',
     alignItems: 'center',
   },

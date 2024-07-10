@@ -186,7 +186,6 @@ const styles = StyleSheet.create({
         fontStyle: 'normal',
         fontWeight: '800',
         color: 'black',
-        // marginTop : 10
     },
     icon: {
         width: 20,
