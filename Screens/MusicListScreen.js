@@ -1,9 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, StyleSheet, TouchableOpacity, InteractionManager, ActivityIndicator, Image, Modal } from 'react-native';
+import { View, Text, FlatList, StyleSheet, TouchableOpacity, InteractionManager, ActivityIndicator, Image, Modal, TextInput } from 'react-native';
 import RNFS from 'react-native-fs';
 import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-// import { check } from 'react-native-permissions';
 
 const MusicListScreen = () => {
   const [musicFiles, setMusicFiles] = useState([]);
@@ -12,8 +11,18 @@ const MusicListScreen = () => {
   const [showPopup, setShowPopup] = useState(false);
   const [showDetailsPopup, setShowDetailsPopup] = useState(false);
   const [selectedSong, setSelectedSong] = useState(null);
+  const [showFilterModal, setShowFilterModal] = useState(false);
+  const [selectedOrder, setSelectedOrder] = useState(''); 
   const navigation = useNavigation();
   const [musicHistoryFiles, setMusicHistoryFiles] = useState([]);
+  const [selectedFilters, setSelectedFilters] = useState([]);
+  const [dateClick, setDateClick] = useState(false)
+  const [NameClick, setNameClick] = useState(false)
+  const [sizeClick, setSizeClick] = useState(false)
+  const [ascendingClick, setAscendingClick] = useState(false)
+  const [descendingClick, setDescendingClick] = useState(false)
+  const [shortingSong, setShortingSong] = useState(''); 
+  const [shortingAseSong, setShortingAseSong] = useState(''); 
   
   useEffect(() => {
     getData();
@@ -35,7 +44,7 @@ const MusicListScreen = () => {
         await Promise.all(directories.map(async directory => {
           await fetchMusicFiles(directory.path, currentDepth);
         }));
-musicFiles: 
+
         setMusicFiles(prevState => [
           ...prevState,
           ...audioFiles.map(file => ({
@@ -94,6 +103,65 @@ musicFiles:
     file.name.toLowerCase().includes(searchText.toLowerCase())
   );
 
+  const renderItemForModal = ({item}) => {
+    return(
+      <TouchableOpacity style={styles.filterContainer} >
+        <Text style={styles.filterModalText} >{item.text}</Text>
+      </TouchableOpacity>
+    )
+  }
+
+  const handleFilterSelect = (filter) => {
+    setShortingSong(filter)
+    let updatedFilters;
+    let dateClickValue = false;
+    let nameClickValue = false;
+    let sizeClickValue = false;
+
+    if (selectedFilters.includes(filter)) {
+      updatedFilters = selectedFilters.filter((f) => f !== filter);
+    } else {
+      updatedFilters = [filter];
+    }
+    setSelectedFilters(updatedFilters);
+
+    if (filter === 'Date') {
+      dateClickValue = true;
+      nameClickValue = false;
+      sizeClickValue = false;
+    } else if (filter === 'Name') {
+      nameClickValue = true;
+      sizeClickValue = false;
+      dateClickValue = false;
+    } else if (filter === 'Size') {
+      sizeClickValue = true;
+      dateClickValue = false;
+      nameClickValue = false;
+    }
+
+    setDateClick(dateClickValue);
+    setNameClick(nameClickValue);
+    setSizeClick(sizeClickValue);
+  };
+
+  const handleOrderSelect = (order) => {
+    setShortingAseSong(order)
+    let ascendingClickValue = false;
+    let descendingClickValue = false;
+  
+    if (order === 'Ascending') {
+      ascendingClickValue = true;
+      descendingClickValue = false;
+    } else if (order === 'Descending') {
+      descendingClickValue = true;
+      ascendingClickValue = false;
+    }
+  
+    setAscendingClick(ascendingClickValue);
+    setDescendingClick(descendingClickValue);
+    setSelectedOrder(order);
+  };
+  
   return (
     <View style={styles.container}>
       {loading ? (
@@ -103,11 +171,25 @@ musicFiles:
         </View>
       ) : (
         <>
+          <View style={styles.filterRow}>
+            <Text style={styles.filterText}>ALL music</Text>
+            <TouchableOpacity onPress={() => setShowFilterModal(true)}>
+              <Image style={styles.filterIcon} source={require('../assets/images/filtar_icon.png')} />
+            </TouchableOpacity>
+          </View> 
+          <TextInput
+            style={styles.searchBar}
+            placeholder="Search music"
+            value={searchText}
+            onChangeText={setSearchText}
+            placeholderTextColor={'#ccc'}
+          />
           <FlatList
             data={filteredMusicFiles}
             renderItem={renderItem}
             keyExtractor={(item, index) => `${item.path}-${index}`}
           />
+
           <Modal
             animationType="slide"
             transparent={true}
@@ -144,16 +226,89 @@ musicFiles:
                       <Text style={styles.songTitle}>{selectedSong.size} bytes</Text>
                       <Text style={styles.modalText}>Path: </Text>
                       <Text style={styles.songTitle}>{selectedSong.path}</Text>
-                      {/* <Text style={styles.modalText}>Date: </Text>
-                      <Text style={styles.songTitle}>{selectedSong.date}</Text>
-                      <Text style={styles.modalText}>Length: </Text>
-                      <Text style={styles.songTitle}>{selectedSong.length}</Text>
-                      <Text style={styles.modalText}>Artist: </Text>
-                      <Text style={styles.songTitle}>{selectedSong.artist}</Text>
-                      <Text style={styles.modalText}>Album: </Text>
-                      <Text style={styles.songTitle}>{selectedSong.album}</Text> */}
                     </View>
                   )}
+                </View>
+              </TouchableOpacity>
+            </TouchableOpacity>
+          </Modal>
+
+          <Modal
+            animationType="slide"
+            transparent={true}
+            visible={showFilterModal}
+            onRequestClose={() => {
+              setShowFilterModal(false);
+            }}
+          >
+            {/* <FlatList data={modalItems} renderItem={renderItemForModal} /> */}
+            <TouchableOpacity style={styles.modalBackground} activeOpacity={1} onPress={() => setShowFilterModal(false)}>
+              <TouchableOpacity style={styles.filterModalContainer} activeOpacity={1}>
+                <View style={styles.modalContent}>
+                  <View style={{flexDirection:'row'}}>                 
+                    <Text style={styles.filterModalText}>Date</Text>
+                    <TouchableOpacity onPress={() => handleFilterSelect('Date')}>
+                      <Image
+                        source={dateClick ? require('../assets/images/fillcheckbox.png') : require('../assets/images/emptycheckbox.png')}
+                        style={styles.filterIcon}
+                      />
+                  </TouchableOpacity>
+                  </View>
+                  <View style={{flexDirection:'row'}}>                
+                    <Text style={styles.filterModalText}>Name</Text>
+                    <TouchableOpacity onPress={() => handleFilterSelect('Name')}>
+                    <Image
+                        source={NameClick ? require('../assets/images/fillcheckbox.png') : require('../assets/images/emptycheckbox.png')}
+                        style={styles.filterIcon}
+                      />
+                  </TouchableOpacity>
+                  </View>
+                  <View style={{flexDirection:'row'}}>
+                    <Text style={styles.filterModalText}>Size</Text>
+                  <TouchableOpacity onPress={() => handleFilterSelect('Size')}>
+                  <Image
+                        source={sizeClick ? require('../assets/images/fillcheckbox.png') : require('../assets/images/emptycheckbox.png')}
+                        style={styles.filterIcon}
+                      />
+                  </TouchableOpacity>
+                  </View>
+                  {/* <View style={{flexDirection:'row'}}>
+                    <Text style={styles.filterModalText}>Length</Text>
+                  <TouchableOpacity onPress={() => handleFilterSelect('Length')}>
+                  <Image
+                        source={selectedFilters.includes('Length') ? require('../assets/images/fillcheckbox.png') : require('../assets/images/emptycheckbox.png')}
+                        style={styles.filterIcon}
+                      />
+                  </TouchableOpacity>
+                  </View> */}
+                </View>
+                <View style={styles.modalContent2}>
+                <View style={{flexDirection:'row'}}>
+                    <Text style={styles.filterModalText}>Ascending</Text>
+                  <TouchableOpacity onPress={() => handleOrderSelect('Ascending')}>
+                  <Image
+                        source={ascendingClick ? require('../assets/images/fillcheckbox.png') : require('../assets/images/emptycheckbox.png')}
+                        style={styles.filterIcon}
+                      />
+                  </TouchableOpacity>
+                  </View>
+                  <View style={{flexDirection:'row'}}>
+                    <Text style={styles.filterModalText}>Descending</Text>
+                  <TouchableOpacity onPress={() => handleOrderSelect('Descending')}>
+                    <Image
+                        source={descendingClick ? require('../assets/images/fillcheckbox.png') : require('../assets/images/emptycheckbox.png')}
+                        style={styles.filterIcon}
+                      />
+                  </TouchableOpacity>
+                   </View>
+                </View>
+                <View style={styles.filterModalActions}>
+                  <TouchableOpacity onPress={() => setShowFilterModal(false)}>
+                    <Text style={styles.cancelButtonText}>Cancel</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity onPress={() => setShowFilterModal(false)}>
+                    <Text style={styles.okButtonText}>OK</Text>
+                  </TouchableOpacity>
                 </View>
               </TouchableOpacity>
             </TouchableOpacity>
@@ -180,7 +335,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: 20,
     margin: 10,
-    paddingHorizontal: 20
+    paddingHorizontal: 20,
+    color: 'black'
   },
   filterContainer: {
     flexDirection: 'row',
@@ -240,35 +396,78 @@ const styles = StyleSheet.create({
   },
   songArtist: {
     fontSize: 14,
-    color: '#777'
+    color: 'gray'
   },
-  playButton: {
+  playPauseButton: {
     padding: 10
   },
-  playIcon: {
-    width: 20,
-    height: 20
+  playPauseIcon: {
+    width: 30,
+    height: 30
   },
   modalBackground: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'flex-end',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center'
   },
   modalContainer: {
     backgroundColor: 'white',
     padding: 20,
-    borderTopLeftRadius: 10,
-    borderTopRightRadius: 10,
-    alignItems: 'center',
+    borderRadius: 10,
+    width: '80%',
   },
-  modalContent: {    
-   
-    width: '100%',
-    alignItems: 'center',
+  modalContent: {
+    paddingBottom: 5,
+    paddingTop :5,
+    borderBottomColor : '#ccc',
+    borderBottomWidth: 1,
+  },
+  modalContent2: {
+    paddingBottom: 5,
+    paddingTop :5,
   },
   modalText: {
     fontSize: 18,
+    marginBottom: 10,
+    color: 'black'
+  },
+  filterModalContainer: {
+    backgroundColor: 'white',
+    padding: 20,
+    borderRadius: 10,
+    width: '80%',
+  },
+  filterModalText: {
+    fontSize: 18,
+    marginBottom: 10,
     color: 'black',
+    width : '90%'
+  },
+  filterModalActions: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 20
+  },
+  cancelButtonText: {
+    fontSize: 18,
+    color: 'red'
+  },
+  okButtonText: {
+    fontSize: 18,
+    color: 'green'
+  },
+  filterRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    padding: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#ccc',
+    alignItems: 'center'
+  },
+  filterIcon: {
+    width: 25,
+    height: 25
   },
 });
 

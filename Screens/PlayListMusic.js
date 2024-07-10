@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import RNFS from 'react-native-fs';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { View, Text, StyleSheet, Image, TouchableOpacity, Modal, FlatList } from 'react-native';
 
@@ -10,8 +9,6 @@ export default function PlayListMusic({ route, navigation }) {
     const [selectedSong, setSelectedSong] = useState([]);
     const [showTickIcon, setShowTickIcon] = useState(false);
     const [musicHistoryFiles, setMusicHistoryFiles] = useState([]);
-
-    const path = RNFS.ExternalStorageDirectoryPath;
 
     useEffect(() => {
         loadPlaylists();
