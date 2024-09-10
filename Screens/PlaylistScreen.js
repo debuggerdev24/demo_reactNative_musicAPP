@@ -116,7 +116,6 @@ export default function PlaylistScreen({ navigation }) {
         />
       </View>
 
-
       <Modal
         animationType="slide"
         transparent={true}
