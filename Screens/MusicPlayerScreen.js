@@ -1,108 +1,192 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image, AppState } from 'react-native';
 import Slider from '@react-native-community/slider';
-import SoundPlayer from 'react-native-sound-player';
+import TrackPlayer, { Capability, useProgress, State } from 'react-native-track-player';
 import { useNavigation } from '@react-navigation/native';
 import pauseImage from '../assets/images/pause.png';
 import playImage from '../assets/images/play.png';
 import nextImage from '../assets/images/next.png';
 import previousImage from '../assets/images/previous.png';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const MusicPlayerScreen = ({ route }) => {
   const navigation = useNavigation();
-  const {musicFiles, currentIndex } = route.params || {};
-  const [isPlaying, setIsPlaying] = useState(true);
+  const { musicFiles, currentIndex } = route.params || {};
+  const { position, duration } = useProgress();
   const [currentTrackIndex, setCurrentTrackIndex] = useState(currentIndex);
-  const [currentTime, setCurrentTime] = useState(0);
-  const [duration, setDuration] = useState(0);
-
-  useEffect(() => {    
-    if (!musicFiles || !Array.isArray(musicFiles) || musicFiles.length === 0) {
-      console.error('musicFiles is not defined or empty');
-      return;
-
-    }
-    if (currentTrackIndex < 0 || currentTrackIndex >= musicFiles.length) {
-      console.error('currentTrackIndex is out of bounds');
-      return;
-    }
-    playSound(musicFiles[currentTrackIndex].path);
-
-    const interval = setInterval(updateCurrentTime, 1000);
-
-    return () => {
-      SoundPlayer.stop();
-      clearInterval(interval);
-    };
-  }, [currentTrackIndex, musicFiles]);
+  const [appState, setAppState] = useState(AppState.currentState);
+  const [playPause, setPlayPause] = useState(false);
 
   useEffect(() => {
-    if (!musicFiles || !musicFiles[currentTrackIndex]) {
-      console.error('musicFiles or currentTrackIndex is undefined or out of bounds');
-      return;
-    }
+    const handleAppStateChange = (nextAppState) => {
+      setAppState(nextAppState);
+    };
 
-    const interval = setInterval(updateCurrentTime, 1000);
+    const subscription = AppState.addEventListener('change', handleAppStateChange);
 
     return () => {
-      SoundPlayer.stop();
-      clearInterval(interval);
+      subscription.remove();
     };
+  }, []);
+
+  useEffect(() => {
+    updateHistory();
+  }, []);
+
+  useEffect(() => {
+    updateHistory();
   }, [currentTrackIndex]);
 
   useEffect(() => {
-    if (Math.floor(currentTime) === Math.floor(duration)) {
-      if (duration) {
-        handleNext();
-      }
-    }
-  }, [currentTime]);
+    playPauseButtonSet();
+  }, []);
 
-  const playSound = async (path) => {
-    try {
-      await SoundPlayer.playUrl(`file://${path}`);
-      setIsPlaying(true);
-      const info = await SoundPlayer.getInfo();
-      setDuration(info.duration);
-    } catch (error) {
-      console.error('Failed to play the sound:', error.message);
-    }
-  };
-
-  const updateCurrentTime = async () => {
-    try {
-      const info = await SoundPlayer.getInfo();
-      setCurrentTime(info.currentTime);
-    } catch (error) {
-      console.error('Failed to get info:', error.message);
-    }
-  };
-
-  const handlePlayPause = () => {
-    if (isPlaying) {
-      SoundPlayer.pause();
-      setIsPlaying(false);
+  const playPauseButtonSet = async () => {
+    const currentState = await TrackPlayer.getState();
+    if (currentState === State.Playing) {
+      setPlayPause(false);
     } else {
-      SoundPlayer.resume();
-      setIsPlaying(true);
+      setPlayPause(true);
+    }
+  }
+
+  useEffect(() => {
+    
+    const setupPlayer = async () => {
+      try {
+        await TrackPlayer.setupPlayer();
+        await TrackPlayer.updateOptions({
+          stopWithApp: false,
+          capabilities: [
+            Capability.Play,
+            Capability.Pause,
+            Capability.SkipToNext,
+            Capability.SkipToPrevious,
+            Capability.Stop,
+          ],
+          compactCapabilities: [
+            Capability.Play,
+            Capability.Pause,
+            Capability.SkipToNext,
+          ],
+        });
+
+        if (musicFiles && musicFiles?.length > 0) {
+          loadTrack(currentTrackIndex);
+        }
+      } catch (error) {
+        console.error('Error setting up player:', error);
+      }
+    };
+
+    setupPlayer();
+
+    // return () => {
+    //   // TrackPlayer.destroy();
+    // };
+  }, []);
+
+  useEffect(() => {
+    loadTrack(currentTrackIndex);
+  }, [currentTrackIndex]);
+
+  const loadTrack = async (index) => {
+    if (!musicFiles || index < 0 || index >= musicFiles?.length) {
+      console.error('Invalid track index or music files');
+      return;
+    }
+
+    try {
+      const track = musicFiles[index];
+      if (!track) {
+        console.error(`Track at index ${index} is null`);
+        return;
+      }
+
+      const trackId = track?.id || `track-${index}-${new Date().getTime()}`;
+
+      if (!track.name) {
+        console.error(`Track at index ${index} is name: ${JSON.stringify(track)}`);
+        return;
+      }
+
+      if (!track.path) {
+        console.error(`Track at index ${index} is missing path: ${JSON.stringify(track)}`);
+        return;
+      }
+
+      const lastIndex = await AsyncStorage.getItem('lastTrack');
+
+      if (lastIndex !== null && lastIndex === index.toString()) {
+        console.log('Track is already playing');
+        return;
+      }
+      
+      console.log("Loading track at index:", index);
+
+      await TrackPlayer.reset();
+      await TrackPlayer.add({
+        id: trackId,
+        url: `file://${track.path}`,
+        title: track.name,
+        artist: 'unknown',
+      });
+      await TrackPlayer.play();
+
+      await AsyncStorage.setItem('lastTrack', index.toString());
+    } catch (error) {
+      console.error('Failed to play the track:', error);
     }
   };
 
-  const handleNext = () => {
+  const updateHistory = async () => {
+    try {
+      const historyMusic = musicFiles[currentTrackIndex];
+      const jsonValue = await AsyncStorage.getItem('historyData');
+      let historyData = jsonValue !== null ? JSON.parse(jsonValue) : [];
+      historyData.push(historyMusic);
+      const uniqueHistory = Array.from(new Set(historyData.map((item) => item.path))).map((path) =>
+        historyData.find((item) => item.path === path)
+      );
+      console.log("updateHistory>>>>",historyMusic);
+      
+      await AsyncStorage.setItem('historyData', JSON.stringify(uniqueHistory));
+    } catch (e) {
+      console.error('Error updating history data:', e);
+    }
+  };
+
+  const handlePlayPause = async () => {
+    const currentState = await TrackPlayer.getState();
+    if (currentState === State.Playing) {
+      setPlayPause(true);
+      await TrackPlayer.pause();
+    } else {
+      setPlayPause(false);
+      await TrackPlayer.play();
+    }
+  };
+
+  const handleNext = async () => {
     if (currentTrackIndex < musicFiles.length - 1) {
       setCurrentTrackIndex(currentTrackIndex + 1);
     }
   };
 
-  const handlePrev = () => {
+  const handlePrev = async () => {
     if (currentTrackIndex > 0) {
       setCurrentTrackIndex(currentTrackIndex - 1);
     }
   };
 
-  const handleSliderValueChange = (value) => {
-    SoundPlayer.seek(value);
-    setCurrentTime(value);
+  const handleSliderValueChange = async (value) => {
+    await TrackPlayer.seekTo(value);
+  };
+
+  const handleTrackEnd = async () => {
+    if (currentTrackIndex < musicFiles.length - 1) {
+      setCurrentTrackIndex(currentTrackIndex + 1);
+    }
   };
 
   if (!musicFiles || musicFiles.length === 0) {
@@ -117,7 +201,7 @@ const MusicPlayerScreen = ({ route }) => {
     <View style={styles.container}>
       <View style={{ flexDirection: 'row', marginBottom: '40%' }}>
         <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-          <Text style={styles.backButtonText}>{"<"}</Text>
+          <Text style={styles.backButtonText}>{'<'}</Text>
         </TouchableOpacity>
         <Text style={styles.title} numberOfLines={1} ellipsizeMode="tail">
           {musicFiles[currentTrackIndex].name}
@@ -126,27 +210,30 @@ const MusicPlayerScreen = ({ route }) => {
       <Image style={styles.albumCover} source={require('../assets/images/music-note.png')} />
 
       <View style={styles.timeContainer}>
-        <Text style={styles.timeText}>{new Date(currentTime * 1000).toISOString().substr(14, 5)}</Text>
+        <Text style={styles.timeText}>{new Date(position * 1000).toISOString().substr(14, 5)}</Text>
         <Slider
           style={styles.slider}
           minimumValue={0}
           maximumValue={duration}
-          value={currentTime}
+          value={position}
           onValueChange={handleSliderValueChange}
           minimumTrackTintColor="#FF007F"
           maximumTrackTintColor="#000000"
-          thumbTintColor="#FF007F" />
+          thumbTintColor="#FF007F"
+        />
         <Text style={styles.timeText}>{new Date(duration * 1000).toISOString().substr(14, 5)}</Text>
       </View>
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', width: '100%' }}>
-        <Text style={[styles.title, { marginTop: 50 }]} numberOfLines={2}>{musicFiles[currentTrackIndex].name}</Text>
+        <Text style={[styles.title, { marginTop: 50 }]} numberOfLines={2}>
+          {musicFiles[currentTrackIndex].name}
+        </Text>
       </View>
       <View style={styles.controlsContainer}>
         <TouchableOpacity onPress={handlePrev} style={styles.controlButton} disabled={currentTrackIndex === 0}>
           <Image source={previousImage} style={styles.controlImage} />
         </TouchableOpacity>
         <TouchableOpacity onPress={handlePlayPause} style={styles.playPauseButton}>
-          <Image source={isPlaying ? pauseImage : playImage} style={styles.playPauseImage} />
+          <Image source={playPause ? playImage : pauseImage} style={styles.playPauseImage} />
         </TouchableOpacity>
         <TouchableOpacity onPress={handleNext} style={styles.controlButton} disabled={currentTrackIndex === musicFiles.length - 1}>
           <Image source={nextImage} style={styles.controlImage} />
@@ -215,6 +302,7 @@ const styles = StyleSheet.create({
   playPauseButton: {
     padding: 15,
     borderRadius: 30,
+
     justifyContent: 'center',
     alignItems: 'center',
   },

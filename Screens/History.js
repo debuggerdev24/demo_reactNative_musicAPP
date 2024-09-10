@@ -14,20 +14,7 @@ const History = () => {
             const jsonValue = await AsyncStorage.getItem("historyData");
             if (jsonValue !== null) {
                 const parsedData = JSON.parse(jsonValue);
-                const existingIndex = historyData.findIndex(item => item.path === parsedData.path);
-                if (existingIndex !== -1) {
-                    const updatedData = [...historyData];
-                    updatedData[existingIndex] = parsedData;
-                    setHistoryData(updatedData);
-                } else {
-                    setHistoryData(prevData => {
-                        const isDuplicate = prevData.some(item => item.path === parsedData.path);
-                        if (!isDuplicate) {
-                            return [...prevData, parsedData];
-                        }
-                        return prevData;
-                    });
-                }
+                setHistoryData(parsedData);
             }
         } catch (e) {
             console.error('Error getting history data:', e);
@@ -53,6 +40,8 @@ const History = () => {
     const handleRemove = async () => {
         const updatedData = historyData.reverse().filter((_, index) => index !== selectedIndex);
         setHistoryData(updatedData);
+        await AsyncStorage.setItem("historyData", JSON.stringify(updatedData));
+        setShowPopup(false)
     };
 
     const renderItem = ({ item, index }) => (

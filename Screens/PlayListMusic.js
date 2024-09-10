@@ -54,7 +54,6 @@ export default function PlayListMusic({ route, navigation }) {
             const updatedHistory = [...musicHistoryFiles, selectedMusic];
             setMusicHistoryFiles(updatedHistory);
         }
-        await AsyncStorage.setItem("historyData", JSON.stringify(selectedMusic));
         navigation.navigate('MusicPlayerScreen', { musicFiles: selectedSong, currentIndex: index });
     };
 
@@ -154,7 +153,6 @@ export default function PlayListMusic({ route, navigation }) {
                             </View>
                         )}
                     />
-
                 </View>
             </Modal>
 
